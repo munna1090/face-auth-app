@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: face-auth-backend
+    env: docker
+    plan: free
+    region: oregon
+    # The following will be overridden by the Render UI connection usually
+    # but serves as a blueprint
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
