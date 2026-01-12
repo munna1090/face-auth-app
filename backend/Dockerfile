@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# Install system dependencies for dlib and opencv
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     cmake \
     build-essential \
@@ -9,14 +9,22 @@ RUN apt-get update && apt-get install -y \
     libx11-dev \
     libgtk-3-dev \
     pkg-config \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Download pre-built dlib wheel to avoid compilation
+# This wheel is for Python 3.10 on Linux x86_64
+RUN wget https://github.com/m-bain/whisperX/releases/download/v3.0.0/dlib-19.24.2-cp310-cp310-linux_x86_64.whl
+
 COPY requirements.txt .
 
-# Install Python dependencies
-# Note: dlib compilation takes time
+# Modify requirements to exclude dlib causing compilation
+RUN sed -i '/dlib/d' requirements.txt
+
+# Install dlib from wheel first, then other requirements
+RUN pip install dlib-19.24.2-cp310-cp310-linux_x86_64.whl
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
