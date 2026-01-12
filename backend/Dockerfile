@@ -1,6 +1,7 @@
 FROM python:3.10-slim
 
-# Install system dependencies
+# Install system dependencies including cmake
+# Debian Bookworm (slim default) has CMake 3.25 which is compatible with dlib
 RUN apt-get update && apt-get install -y \
     cmake \
     build-essential \
@@ -16,16 +17,15 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-# Try to install from a different pre-built wheel source, or fall back to compilation
-# Using a more generic approach: install cmake/scikit-build first to speed up compilation if needed
-RUN pip install --no-cache-dir cmake scikit-build
+# Install build tools, but NOT cmake (use system cmake)
+RUN pip install --no-cache-dir scikit-build wheel setuptools
 
 # Modify requirement file temporarily to handle dlib separately
 RUN sed -i '/dlib/d' requirements.txt
 
-# Install dlib - attempting to use a known compatible version that might have a binary wheel
-# or rely on the now-installed build tools to compile it faster
-RUN pip install --no-cache-dir dlib==19.24.2
+# Install dlib 19.24.4 (Standard version)
+# Using system cmake prevents the "Compatibility < 3.5 removed" error from newer pip cmake
+RUN pip install --no-cache-dir dlib==19.24.4
 
 # Install remaining requirements
 RUN pip install --no-cache-dir -r requirements.txt
