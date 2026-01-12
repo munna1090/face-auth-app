@@ -14,23 +14,24 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Download pre-built dlib wheel to avoid compilation
-# This wheel is for Python 3.10 on Linux x86_64
-RUN wget https://github.com/m-bain/whisperX/releases/download/v3.0.0/dlib-19.24.2-cp310-cp310-linux_x86_64.whl
-
 COPY requirements.txt .
 
-# Modify requirements to exclude dlib causing compilation
+# Try to install from a different pre-built wheel source, or fall back to compilation
+# Using a more generic approach: install cmake/scikit-build first to speed up compilation if needed
+RUN pip install --no-cache-dir cmake scikit-build
+
+# Modify requirement file temporarily to handle dlib separately
 RUN sed -i '/dlib/d' requirements.txt
 
-# Install dlib from wheel first, then other requirements
-RUN pip install dlib-19.24.2-cp310-cp310-linux_x86_64.whl
+# Install dlib - attempting to use a known compatible version that might have a binary wheel
+# or rely on the now-installed build tools to compile it faster
+RUN pip install --no-cache-dir dlib==19.24.2
+
+# Install remaining requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Expose the port the app runs on
 EXPOSE 8000
 
-# Run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
