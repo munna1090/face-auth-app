@@ -1,10 +1,8 @@
 FROM python:3.10-slim
 
-# Install system dependencies including cmake
-# Debian Bookworm (slim default) has CMake 3.25 which is compatible with dlib
+# Install minimal system dependencies
+# We don't need cmake/build-essential if we use the wheel!
 RUN apt-get update && apt-get install -y \
-    cmake \
-    build-essential \
     libopenblas-dev \
     liblapack-dev \
     libx11-dev \
@@ -17,17 +15,14 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-# Install build tools, but NOT cmake (use system cmake)
-RUN pip install --no-cache-dir scikit-build wheel setuptools
-
-# Modify requirement file temporarily to handle dlib separately
+# 1. Remove dlib from requirements.txt to prevent pip from trying to compile it
 RUN sed -i '/dlib/d' requirements.txt
 
-# Install dlib 19.24.4 (Standard version)
-# Using system cmake prevents the "Compatibility < 3.5 removed" error from newer pip cmake
-RUN pip install --no-cache-dir dlib==19.24.4
+# 2. Install dlib from a specific pre-built wheel (PyPI hosted, reliable)
+# This bypasses the compilation step completely
+RUN pip install https://files.pythonhosted.org/packages/b7/c1/8141f237f815e1974d6f831f24d7768565b1c1e95c1c834f3c7845f1b5c9/dlib_bin-19.24.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
-# Install remaining requirements
+# 3. Install other requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
